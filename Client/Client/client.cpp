@@ -1,19 +1,18 @@
 #include"stdafx.h"
 
 #include<iostream>
-#include<string>
-#include<stdlib.h>
+
 #include<winsock2.h>
 #include<ws2tcpip.h>
 
+#define PORT 8080;
 using namespace std;
 
 int main(int agrc, char** argv[]) {
-	//Step - 1 -> Creating a Socket & WSADATA
+	//Step - 1 -> Creating a WSAStartup
 	cout << "CLIENT SIDE " << endl;
 	SOCKET clientSocket;
 	WSADATA wsaData;
-	int port = 55555;
 	int wsaerr;
 	WORD wVersionRequested = MAKEWORD(2, 2);
 	wsaerr = WSAStartup(wVersionRequested, &wsaData);
@@ -38,6 +37,8 @@ int main(int agrc, char** argv[]) {
 
 	sockaddr_in clientService;
 	clientService.sin_family = AF_INET;
+	int port = PORT;
+	clientService.sin_port = port;
 	InetPton(AF_INET, L"127.0.0.1", &clientService.sin_addr.s_addr);
 	if (connect(clientSocket, (SOCKADDR*)&clientService, sizeof(clientService)) == INVALID_SOCKET) {
 		cout << "Client Connect() : failed to connect " << endl;
