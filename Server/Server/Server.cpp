@@ -1,19 +1,20 @@
 #include"stdafx.h"
 
 #include<iostream>
+
 #include<winsock2.h>
 #include<ws2tcpip.h>
-#include<string>
-#include<stdlib.h>
+
+#define PORT 8080;
 
 using namespace std;
 
 int main(int argc, char** argv[]) {
-	cout << "SERVER SIDE" << endl;
-	//Step - 1 -> Creating a Socket & WSADATA
+	cout << "SERVER SIDE SOCKET" << endl;
+	cout << "------------------" << endl;
+	//Step - 1 -> Creating a WSAStartup
 	SOCKET serverSocket, acceptSocket;
 	WSADATA wsaData;
-	int port = 55555;
 	int wsaerr;
 	WORD wVersionRequested = MAKEWORD(2, 2);
 	wsaerr = WSAStartup(wVersionRequested, &wsaData);
@@ -40,6 +41,7 @@ int main(int argc, char** argv[]) {
 	sockaddr_in service; 
 	service.sin_family = AF_INET;
 	InetPton(AF_INET, L"127.0.0.1", &service.sin_addr.s_addr); 
+	int port = PORT;
 	service.sin_port = htons(port);
 	if (bind(serverSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR) {
 		cout << "Bind() : failed " << WSAGetLastError() << endl;
@@ -63,7 +65,7 @@ int main(int argc, char** argv[]) {
 			WSACleanup();
 			return -1;
 		}
-		cout << "Accepted Connection" << endl;
+		cout << "Accepted the Connection" << endl;
 		system("pause");
 		WSACleanup();
  }
