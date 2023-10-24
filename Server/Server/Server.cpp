@@ -1,19 +1,26 @@
 #include "stdafx.h"
-
 #include <iostream>
-
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
 #include <string>
-#include<stdlib.h>
+#include <thread>
 
 using namespace std;
+
+enum MessageType {
+    TEXT_MESSAGE,
+    FILE_TRANSFER
+};
 
 int receiveData(SOCKET socket, char* buffer, int bufferSize) {
     int bytesReceived = recv(socket, buffer, bufferSize, 0);
     if (bytesReceived == SOCKET_ERROR) {
-        cout << "recv() failed: " << WSAGetLastError() << endl;
+        int error = WSAGetLastError();
+        if (error == WSAECONNRESET) {
+            cout << "Connection reset by peer." << endl;
+        } else {
+            cout << "recv() failed: " << error << endl;
+        }
     }
     return bytesReceived;
 }
@@ -27,8 +34,40 @@ int sendData(SOCKET socket, const char* data, int dataSize) {
 }
 
 void cleanup(SOCKET socket) {
-    closesocket(socket);
-    WSACleanup();
+    if (closesocket(socket) == SOCKET_ERROR) {
+        cout << "closesocket() failed: " << WSAGetLastError() << endl;
+    }
+    if (WSACleanup() == SOCKET_ERROR) {
+        cout << "WSACleanup() failed: " << WSAGetLastError() << endl;
+    }
+}
+
+void handleClient(SOCKET clientSocket) {
+    MessageType messageType;
+    int bytesReceived = receiveData(clientSocket, (char*)&messageType, sizeof(MessageType));
+
+    if (bytesReceived == sizeof(MessageType)) {
+        switch (messageType) {
+            case TEXT_MESSAGE: {
+                char buffer[1024];
+                bytesReceived = receiveData(clientSocket, buffer, sizeof(buffer));
+                if (bytesReceived > 0) {
+                    buffer[bytesReceived] = '\0';
+                    cout << "Received text message: " << buffer << endl;
+                }
+                break;
+            }
+            case FILE_TRANSFER: {
+                // Handle file transfer
+                // ...
+                break;
+            }
+        }
+    } else {
+        cout << "Invalid message type received." << endl;
+    }
+
+    cleanup(clientSocket);
 }
 
 int main(int argc, char* argv[]) {
@@ -88,20 +127,10 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     cout << "Accepted Connection" << endl;
+
+    std::thread clientThread(handleClient, acceptSocket);
+    clientThread.detach();
+
     system("pause");
-
-    char buffer[1024];
-
-    int bytesReceived = receiveData(acceptSocket, buffer, sizeof(buffer));
-    if (bytesReceived > 0) {
-        buffer[bytesReceived] = '\0';
-        cout << "Received: " << buffer << endl;
-    }
-
-    const char* sendDataStr = "Hello, client!";
-    int bytesSent = sendData(acceptSocket, sendDataStr, strlen(sendDataStr));
-
-    cleanup(acceptSocket);
-
     return 0;
 }
