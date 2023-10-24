@@ -12,16 +12,16 @@ enum MessageType {
     FILE_TRANSFER
 };
 
-int sendData(SOCKET socket, const char* data, int dataSize) {
-    int bytesSent = send(socket, data, dataSize, 0);
+int sendData(SOCKET socket, const char* data, size_t dataSize) {
+    int bytesSent = send(socket, data, static_cast<int>(dataSize), 0);
     if (bytesSent == SOCKET_ERROR) {
         cout << "send() failed: " << WSAGetLastError() << endl;
     }
     return bytesSent;
 }
 
-int receiveData(SOCKET socket, char* buffer, int bufferSize) {
-    int bytesReceived = recv(socket, buffer, bufferSize, 0);
+int receiveData(SOCKET socket, char* buffer, size_t bufferSize) {
+    int bytesReceived = recv(socket, buffer, static_cast<int>(bufferSize), 0);
     if (bytesReceived == SOCKET_ERROR) {
         cout << "recv() failed: " << WSAGetLastError() << endl;
     }
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     InetPton(AF_INET, L"127.0.0.1", &clientService.sin_addr.s_addr);
     clientService.sin_port = htons(port);
 
-    if (connect(clientSocket, (SOCKADDR*)&clientService, sizeof(clientService)) == INVALID_SOCKET) {
+    if (connect(clientSocket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR) {
         cout << "Client Connect() : failed to connect " << endl;
         WSACleanup();
         return 0;
@@ -86,11 +86,11 @@ int main(int argc, char* argv[]) {
         cout << "Client can start sending and receiving data ......." << endl;
     }
 
-    thread sendThread(sendThread, clientSocket);
-    thread receiveThread(receiveThread, clientSocket);
+    thread sendThr(sendThread, clientSocket);
+    thread recvThr(receiveThread, clientSocket);
 
-    sendThread.join();
-    receiveThread.join();
+    sendThr.join();
+    recvThr.join();
 
     cleanup(clientSocket);
     return 0;
