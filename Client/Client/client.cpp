@@ -1,13 +1,16 @@
 #include "stdafx.h"
-
 #include <iostream>
 #include <string>
-#include <stdlib.h>
-
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <thread>
 
 using namespace std;
+
+enum MessageType {
+    TEXT_MESSAGE,
+    FILE_TRANSFER
+};
 
 int sendData(SOCKET socket, const char* data, int dataSize) {
     int bytesSent = send(socket, data, dataSize, 0);
@@ -30,10 +33,21 @@ void cleanup(SOCKET socket) {
     WSACleanup();
 }
 
-int main(int argc, char* argv[]) {
-    cout << "CLIENT SIDE " << endl;
-    cout << "-----------" << endl;
+void sendThread(SOCKET clientSocket) {
+    const char* sendDataStr = "HELLO THERE, SERVER";
+    int bytesSent = sendData(clientSocket, sendDataStr, strlen(sendDataStr));
+}
 
+void receiveThread(SOCKET clientSocket) {
+    char buffer[1024];
+    int bytesReceived = receiveData(clientSocket, buffer, sizeof(buffer));
+    if (bytesReceived > 0) {
+        buffer[bytesReceived] = '\0';
+        cout << "Received: " << buffer << endl;
+    }
+}
+
+int main(int argc, char* argv[]) {
     SOCKET clientSocket;
     WSADATA wsaData;
     int port = 55555;
@@ -53,10 +67,9 @@ int main(int argc, char* argv[]) {
 
     if (clientSocket == INVALID_SOCKET) {
         cout << "Error at Socket() : " << WSAGetLastError() << endl;
+        WSACleanup();
         return 0;
     }
-
-    cout << "Socket is OK!" << endl;
 
     sockaddr_in clientService;
     clientService.sin_family = AF_INET;
@@ -73,15 +86,11 @@ int main(int argc, char* argv[]) {
         cout << "Client can start sending and receiving data ......." << endl;
     }
 
-    const char* sendDataStr = "HELLO THERE, SERVER";
-    int bytesSent = sendData(clientSocket, sendDataStr, strlen(sendDataStr));
+    thread sendThread(sendThread, clientSocket);
+    thread receiveThread(receiveThread, clientSocket);
 
-    char buffer[1024];
-    int bytesReceived = receiveData(clientSocket, buffer, sizeof(buffer));
-    if (bytesReceived > 0) {
-        buffer[bytesReceived] = '\0';
-        cout << "Received: " << buffer << endl;
-    }
+    sendThread.join();
+    receiveThread.join();
 
     cleanup(clientSocket);
     return 0;
